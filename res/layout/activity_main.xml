@@ -1,0 +1,80 @@
+<ScrollView
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:isScrollContainer="true"
+>
+
+<LinearLayout 
+    android:layout_width="fill_parent"
+    android:layout_height="fill_parent"
+    android:gravity="top"
+    android:orientation="vertical"
+    android:paddingLeft="15dp"
+    android:paddingRight="15dp"
+     >
+
+    <Switch
+        android:id="@+id/serviceSwitch"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/notifications"
+        android:textSize="25sp" 
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"/>
+
+    <Switch
+        android:id="@+id/smsSwitch"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/text_messages" 
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"
+        android:textSize="25sp"/>
+
+    <Switch
+        android:id="@+id/callSwitch"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/phone_calls" 
+        android:paddingTop="15dp"
+        android:paddingBottom="15dp"
+        android:textSize="25sp"/>
+
+    <TextView
+        android:id="@+id/textView1"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="bottom|left"
+        android:layout_gravity="left"
+        android:text="@string/frequency"
+        android:paddingTop="15dp"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <Spinner
+        android:id="@+id/frequencySpinner"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textSize="25sp"
+        android:paddingBottom="15dp"/>
+    
+    <TextView
+        android:id="@+id/textView2"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="bottom|left"
+        android:layout_gravity="left"
+        android:text="@string/history"
+        android:paddingTop="15dp"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <Spinner
+        android:id="@+id/historySpinner"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:textSize="25sp"
+        android:paddingBottom="15dp"/>
+    
+</LinearLayout>
+</ScrollView>

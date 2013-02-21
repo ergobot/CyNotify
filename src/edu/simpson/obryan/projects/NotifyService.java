@@ -25,7 +25,7 @@ public class NotifyService extends IntentService {
 	private Notification myNotification;
 
 	boolean NotifyEnabled, NotifySms, NotifyCall;
-	int frequency; //= 1 * 10000; // milliseconds - time in now is for testing
+	int frequency; // = 1 * 10000; // milliseconds - time in now is for testing
 	int history; // hours
 
 	@Override
@@ -77,7 +77,6 @@ public class NotifyService extends IntentService {
 
 						if (hours <= history) {
 
-							
 							Context context = getApplicationContext();
 							String address = c.getString(
 									c.getColumnIndexOrThrow("address"))
@@ -88,9 +87,10 @@ public class NotifyService extends IntentService {
 									c.getColumnIndexOrThrow("thread_id"))
 									.toString();
 							myNotification = new Notification(
-									R.drawable.ic_launcher, "CyNotify - " + address,
+									R.drawable.ic_launcher, "CyNotify - "
+											+ address,
 									System.currentTimeMillis());
-							
+
 							String notificationTitle = address;
 							String notificationText = message;
 							Intent myIntent = new Intent(
@@ -131,6 +131,7 @@ public class NotifyService extends IntentService {
 			int date = managedCursor.getColumnIndex(CallLog.Calls.DATE);
 			int duration = managedCursor.getColumnIndex(CallLog.Calls.DURATION);
 
+			int isreadcol = managedCursor.getColumnIndex(CallLog.Calls.IS_READ);
 			// Used as the notification id for missed phone messages
 			int phone_id = 0;
 
@@ -141,53 +142,96 @@ public class NotifyService extends IntentService {
 
 				case CallLog.Calls.MISSED_TYPE:
 
-					// Get call date as String and Date
-					String callDate = managedCursor.getString(date);
-					Date callDayTime = new Date(Long.valueOf(callDate));
-					// Get the now
-					Date now = new Date();
-					// Find difference of dates in milliseconds
-					long difference = now.getTime() - callDayTime.getTime();
-					// Get the difference in hours
-					double hours = difference / 1000 / 60 / 60;
+					String isread = managedCursor.getString(isreadcol);
 
-					// Only handle calls from the last 48 hours
-					if (hours <= history) {
+					// if user has interacted with missed call notification then isread == 1
+					// if user has not interacted then isread == 0
+					if (isread.equals("0")) {
 
-						
-						Context context = getApplicationContext();
+						// Get call date as String and Date
+						String callDate = managedCursor.getString(date);
+						Date callDayTime = new Date(Long.valueOf(callDate));
+						// Get the now
+						Date now = new Date();
+						// Find difference of dates in milliseconds
+						long difference = now.getTime() - callDayTime.getTime();
+						// Get the difference in hours
+						double hours = difference / 1000 / 60 / 60;
 
-						String phNumber = managedCursor.getString(number);
+						// Only handle calls from the last 48 hours
+						if (hours <= history) {
 
-						myNotification = new Notification(
-								R.drawable.ic_launcher, "CyNotify - " + phNumber,
-								System.currentTimeMillis());
-						
-						String notificationTitle = phNumber;
-						String notificationText = callDayTime.toLocaleString();
-						Intent myIntent = new Intent(Intent.ACTION_VIEW);
-								// Uri.parse("content://call_log/calls")); this works for almost all
-								// Uri.parse("tel:" + phNumber));// this goes to the dialer;
-						myIntent.setType(CallLog.Calls.CONTENT_TYPE);
-						PendingIntent pendingIntent = PendingIntent
-								.getActivity(NotifyService.this, 0, myIntent,
-										Intent.FLAG_ACTIVITY_NEW_TASK);
+							Context context = getApplicationContext();
 
-						if (!notificationExists) {
-							myNotification.defaults |= Notification.DEFAULT_SOUND;
-							notificationExists = true;
-						} else {
+							String phNumber = managedCursor.getString(number);
 
+							/* start trying to get contact name using phone number*/
+							Uri uri;
+						    String[] projection;
+							
+							uri = Uri.parse("content://contacts/phones/filter");
+						    projection = new String[] { "name" }; 
+						    
+
+						    uri = Uri.withAppendedPath(uri, Uri.encode(phNumber)); 
+						    Cursor nameCursor = this.getContentResolver().query(uri, projection, null, null, null); 
+
+						    String contactName = "";
+
+						    if (nameCursor.moveToFirst()) 
+						    { 
+						        contactName = nameCursor.getString(0);
+						    } 
+
+						    nameCursor.close();
+						    nameCursor = null;
+							
+						    String phoneNotificationTitle;
+						    
+						    if(contactName != null && !contactName.isEmpty())
+						    {
+						    	phoneNotificationTitle = contactName;
+						    }
+						    else
+						    {
+						    	phoneNotificationTitle = phNumber;
+						    }
+							/* end trying to get contact name using phone number */
+							myNotification = new Notification(
+									R.drawable.ic_launcher, "CyNotify - "
+											+ phoneNotificationTitle,
+									System.currentTimeMillis());
+
+							//String notificationTitle = phNumber;
+							String notificationText = callDayTime
+									.toLocaleString();
+							Intent myIntent = new Intent(Intent.ACTION_VIEW);
+							// Uri.parse("content://call_log/calls")); this
+							// works for almost all
+							// Uri.parse("tel:" + phNumber));// this goes to the
+							// dialer;
+							myIntent.setType(CallLog.Calls.CONTENT_TYPE);
+							PendingIntent pendingIntent = PendingIntent
+									.getActivity(NotifyService.this, 0,
+											myIntent,
+											Intent.FLAG_ACTIVITY_NEW_TASK);
+
+							if (!notificationExists) {
+								myNotification.defaults |= Notification.DEFAULT_SOUND;
+								notificationExists = true;
+							} else {
+
+							}
+							myNotification.flags |= Notification.FLAG_AUTO_CANCEL;
+							myNotification.setLatestEventInfo(context,
+									phoneNotificationTitle, notificationText,
+									pendingIntent);
+							notificationManager
+									.notify(phone_id, myNotification);
+							phone_id++;
+							break;
 						}
-						myNotification.flags |= Notification.FLAG_AUTO_CANCEL;
-						myNotification.setLatestEventInfo(context,
-								notificationTitle, notificationText,
-								pendingIntent);
-						notificationManager.notify(phone_id, myNotification);
-						phone_id++;
-						break;
 					}
-
 				}
 
 			}

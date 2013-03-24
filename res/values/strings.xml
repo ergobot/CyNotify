@@ -9,7 +9,12 @@
     <string name="phone_calls">Phone Calls</string>
     <string name="frequency">Reminder Frequency</string>
     <string name="history">Remind From Past</string>
-	
+	<string name="startOnBoot">Start On Boot</string>
+    <string name="resetTimerOnSms">a new SMS</string>
+    <string name="resetTimerOnCall">a new missed call</string>
+    <string name="resetTimer">Reset the timer when there is&#8230;</string>
+    	
+    	
     <string-array name="frequency_array">
         <item>1 Minute</item>
         <item>5 Minutes</item>

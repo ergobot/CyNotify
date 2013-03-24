@@ -18,7 +18,7 @@ import android.widget.Toast;
 
 public class NotifyService extends IntentService {
 
-	public static final String PREFS_NAME = "ServiceDemo2Prefs";
+	public static final String PREFS_NAME = "CyNotifyPrefs";
 
 	Context context;
 	SharedPreferences settings;
@@ -45,6 +45,8 @@ public class NotifyService extends IntentService {
 		super("Notifier");
 
 	}
+	
+	
 
 	@Override
 	protected void onHandleIntent(Intent intent) {
@@ -52,13 +54,15 @@ public class NotifyService extends IntentService {
 		ContentManager contentManager = new ContentManager(this.context);
 		ArrayList<PhoneCall> phoneCalls = new ArrayList<PhoneCall>();
 		ArrayList<SmsMessage> smsMessages = new ArrayList<SmsMessage>();
-		
+		ArrayList<SmsThread> smsThreads = new ArrayList<SmsThread>();
+
 		NotificationMaker notificationMaker = new NotificationMaker(context);
 
 		
 
 		if (NotifySms) {
 			smsMessages = contentManager.GetMissedSms(history);
+			smsThreads = contentManager.ConvertToThreads(smsMessages);
 		} // end of if NotifySms
 
 		// start of content query in call logs
@@ -68,9 +72,13 @@ public class NotifyService extends IntentService {
 		}
 		// End of if NotifyCall
 		
-		notificationMaker.NotifyOfSms(smsMessages);
+		//notificationMaker.NotifyOfSms(smsMessages);
+		if(NotifySms){
+		notificationMaker.NotifyOfSms(smsThreads);
+		}
+		if(NotifyCall){
 		notificationMaker.NotifyOfCalls(phoneCalls);
-		
+		}
 		
 		
 		

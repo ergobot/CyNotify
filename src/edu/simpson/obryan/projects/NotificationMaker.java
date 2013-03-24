@@ -1,5 +1,6 @@
 package edu.simpson.obryan.projects;
 
+import java.sql.Date;
 import java.util.ArrayList;
 
 import android.app.Notification;
@@ -9,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 import android.provider.CallLog;
+import android.text.format.DateFormat;
 
 public class NotificationMaker {
 
@@ -58,47 +60,57 @@ public class NotificationMaker {
 							pendingIntent);
 					
 					notificationManager
-					.notify(phoneCalls.get(i).Id(), myNotification);
+					.notify(phoneCalls.hashCode(), myNotification);
+//					.notify(phoneCalls.get(i).Id(), myNotification);
 				}
 		
 	}
 	
-	public void NotifyOfSms(ArrayList<SmsMessage> smsMessages){
+	public void NotifyOfSms(ArrayList<SmsThread> smsThreads){
 		
 		boolean notificationExists = false;
+		
+				NotificationManager notificationManager;
+				notificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+				
 				// Send notifications for smsMessage
-				for(int i = 0; i < smsMessages.size(); i++)
+				for(int i = 0; i < smsThreads.size(); i++)
 				{
 					
-					Notification myNotification = new Notification(
-							R.drawable.ic_launcher, "CyNotify - "
-									+ smsMessages.get(i).ContactName(),
-							System.currentTimeMillis());
+					// Prepare intent which is triggered if the
+					// notification is selected
+					
+					Intent intent = new Intent(Intent.ACTION_VIEW,Uri.parse("content://mms-sms/conversations/"+ smsThreads.get(i).MessageId())); 
+					PendingIntent pIntent = PendingIntent.getActivity(context, 0,intent,Intent.FLAG_ACTIVITY_NEW_TASK);
 
+					Date date = new Date(System.currentTimeMillis());
+					String time = (String) DateFormat.format("hh:mm:ss", date.getTime());
 					
-					Intent myIntent = new Intent(
-							Intent.ACTION_VIEW,
-							Uri.parse("content://mms-sms/conversations/"
-									+ smsMessages.get(i).MessageId()));
-					PendingIntent pendingIntent = PendingIntent
-							.getActivity(context, 0,
-									myIntent,
-									Intent.FLAG_ACTIVITY_NEW_TASK);
-					
+					// Build notification
+					Notification.Builder builder = new Notification.Builder(context);
+					builder.setTicker("CyNotify - " + smsThreads.get(i).ContactName());
+					builder.setContentTitle(smsThreads.get(i).ContactName());
+					builder.setContentText(smsThreads.get(i).Message());
+					builder.setSmallIcon(R.drawable.ic_launcher);
+					builder.setContentIntent(pIntent);
+					Notification notification = builder.getNotification();
+
 					if (!notificationExists) {
-						myNotification.defaults |= Notification.DEFAULT_SOUND;
+						notification.defaults |= Notification.DEFAULT_SOUND;
 						notificationExists = true;
 					}
-	
-					myNotification.flags |= Notification.FLAG_AUTO_CANCEL;
-					myNotification.setLatestEventInfo(context,
-							smsMessages.get(i).ContactName(), smsMessages.get(i).Message(),
-							pendingIntent);
-					notificationManager.notify(
-							Integer.parseInt(smsMessages.get(i).MessageId()), myNotification);
 					
+					// Hide the notification after its selected
+					notification.flags |= Notification.FLAG_AUTO_CANCEL;
+					notificationManager.notify(Integer.parseInt(smsThreads.get(i).MessageId()), notification); 
+					//notificationManager.notify(i, notification); 
 				}
 		
 	}
+
+	
+	
+	
+	//
 	
 }

@@ -7,12 +7,15 @@ import android.os.Bundle;
 import android.app.Activity;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
+import android.widget.CheckedTextView;
 import android.widget.CompoundButton;
 import android.widget.Spinner;
 import android.widget.Switch;
@@ -22,8 +25,10 @@ import android.widget.CompoundButton.OnCheckedChangeListener;
 
 public class MainActivity extends Activity {
 
-	Switch phoneSwitch, smsSwitch, switchEnabled;
-	boolean NotifyCall, NotifySms, NotifyEnabled;
+	Switch phoneSwitch, smsSwitch, switchEnabled, startOnBootSwitch;
+	CheckedTextView resetTimerOnSmsCheck, resetTimerOnCallCheck;
+	boolean NotifyCall, NotifySms, NotifyEnabled, startOnBootEnabled,
+			resetTimerOnSms, resetTimerOnCall;
 
 	Context context;
 	SharedPreferences settings;
@@ -36,7 +41,7 @@ public class MainActivity extends Activity {
 	Hashtable<Integer, Integer> reverse_history_table;
 	Hashtable<Integer, Integer> history_table;
 
-	public static final String PREFS_NAME = "ServiceDemo2Prefs";
+	public static final String PREFS_NAME = "CyNotifyPrefs";
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -202,6 +207,83 @@ public class MainActivity extends Activity {
 
 		});
 
+		startOnBootSwitch
+				.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+					@Override
+					public void onCheckedChanged(CompoundButton buttonView,
+							boolean isChecked) {
+						settings = getSharedPreferences(PREFS_NAME, 0);
+						SharedPreferences.Editor editor = settings.edit();
+
+						if (buttonView.isChecked()) {
+							startOnBootEnabled = true;
+							Toast.makeText(
+									context,
+									"CyNotify will start when the device starts",
+									Toast.LENGTH_SHORT).show();
+						} else {
+							startOnBootEnabled = false;
+							Toast.makeText(
+									context,
+									"CyNotify will not start when the device starts",
+									Toast.LENGTH_SHORT).show();
+						}
+
+						editor.putBoolean("startOnBootEnabled",
+								startOnBootEnabled);
+						editor.commit();
+
+						if (startOnBootEnabled) {
+							enableBroadcastReceiver("StartupReceiver");
+						} else {
+							disableBroadcastReceiver("StartupReceiver");
+						}
+
+					}
+
+				});
+
+		resetTimerOnSmsCheck.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				settings = getSharedPreferences(PREFS_NAME, 0);
+				SharedPreferences.Editor editor = settings.edit();
+
+				if (resetTimerOnSms) {
+					resetTimerOnSms = false;
+					disableBroadcastReceiver("SmsReceiver");
+				} else {
+					resetTimerOnSms = true;
+					enableBroadcastReceiver("SmsReceiver");
+				}
+				editor.putBoolean("resetTimerOnSms", resetTimerOnSms);
+				editor.commit();
+
+				((CheckedTextView) v).setChecked(resetTimerOnSms);
+
+			}
+		});
+
+		resetTimerOnCallCheck.setOnClickListener(new View.OnClickListener() {
+			public void onClick(View v) {
+				settings = getSharedPreferences(PREFS_NAME, 0);
+				SharedPreferences.Editor editor = settings.edit();
+
+				if (resetTimerOnCall) {
+					resetTimerOnCall = false;
+					disableBroadcastReceiver("PhoneStateReceiver");
+				} else {
+					resetTimerOnCall = true;
+					enableBroadcastReceiver("PhoneStateReceiver");
+				}
+				editor.putBoolean("resetTimerOnCall",
+						resetTimerOnCall);
+				editor.commit();
+				
+				((CheckedTextView) v).setChecked(resetTimerOnCall);
+			}
+		});
+
 	}
 
 	protected void setAlarm() {
@@ -212,6 +294,7 @@ public class MainActivity extends Activity {
 		Intent intent = new Intent(context, AlarmReceiver.class);
 		PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0,
 				intent, 0);
+
 		Calendar time = Calendar.getInstance();
 		time.setTimeInMillis(System.currentTimeMillis());
 		time.add(Calendar.MILLISECOND, frequency);
@@ -226,6 +309,7 @@ public class MainActivity extends Activity {
 		PendingIntent pendingIntent = PendingIntent.getBroadcast(context, 0,
 				intent, 0);
 		alarmMgr.cancel(pendingIntent);
+		pendingIntent.cancel();
 	}
 
 	protected void setupUi(Bundle savedInstanceState) {
@@ -237,7 +321,10 @@ public class MainActivity extends Activity {
 		NotifyEnabled = settings.getBoolean("NotifyEnabled", false);
 		frequency = settings.getInt("frequency", (1 * 60 * 1000));
 		history = settings.getInt("history", 24);
-
+		startOnBootEnabled = settings.getBoolean("startOnBootEnabled", true);
+		resetTimerOnSms = settings.getBoolean("resetTimerOnSms",false);
+		resetTimerOnCall = settings.getBoolean("resetTimerOnCall", false);
+		
 		freq_table = SetupFreqTable();
 		reverse_freq_table = SetupReverseFreqTable();
 		history_table = SetupHistoryTable();
@@ -248,11 +335,17 @@ public class MainActivity extends Activity {
 		switchEnabled = (Switch) findViewById(R.id.serviceSwitch);
 		frequencySpinner = (Spinner) findViewById(R.id.frequencySpinner);
 		historySpinner = (Spinner) findViewById(R.id.historySpinner);
+		startOnBootSwitch = (Switch) findViewById(R.id.startOnBootSwitch);
+		resetTimerOnSmsCheck = (CheckedTextView) findViewById(R.id.resetTimerOnSmsCheck);
+		resetTimerOnCallCheck = (CheckedTextView) findViewById(R.id.resetTimerOnCallCheck);
 
 		// Setup the values on the UI
 		phoneSwitch.setChecked(NotifyCall);
 		smsSwitch.setChecked(NotifySms);
 		switchEnabled.setChecked(NotifyEnabled);
+		startOnBootSwitch.setChecked(startOnBootEnabled);
+		resetTimerOnSmsCheck.setChecked(resetTimerOnSms);
+		resetTimerOnCallCheck.setChecked(resetTimerOnCall);
 
 		// Create an ArrayAdapter using the string arrays(frequency_array) and
 		// the custom layout (spinneritem)
@@ -346,9 +439,46 @@ public class MainActivity extends Activity {
 		editor.putBoolean("NotifySms", NotifySms);
 		editor.putInt("frequency", frequency);
 		editor.putInt("history", history);
-
+		editor.putBoolean("startOnBootEnabled", startOnBootEnabled);
+		editor.putBoolean("resetTimerOnSms", resetTimerOnSms);
+		editor.putBoolean("resetTimerOnCall", resetTimerOnCall);
+		
 		// Commit the edits!
 		editor.commit();
 	}
 
+	public void enableBroadcastReceiver(String receiverName) {
+		ComponentName receiver = null;
+
+		if (receiverName.equals("StartupReceiver")) {
+			receiver = new ComponentName(this, StartupReceiver.class);
+		} else if (receiverName.equals("SmsReceiver")) {
+			receiver = new ComponentName(this, SmsReceiver.class);
+		}
+		  else if (receiverName.equals("PhoneStateReceiver")) {
+			receiver = new ComponentName(this, PhoneStateReceiver.class);
+		}
+		//PhoneStateReceiver
+		PackageManager pm = this.getPackageManager();
+
+		pm.setComponentEnabledSetting(receiver,
+				PackageManager.COMPONENT_ENABLED_STATE_ENABLED,
+				PackageManager.DONT_KILL_APP);
+	}
+
+	public void disableBroadcastReceiver(String receiverName) {
+		ComponentName receiver = null;
+
+		if (receiverName.equals("StartupReceiver")) {
+			receiver = new ComponentName(this, StartupReceiver.class);
+		} else if (receiverName.equals("SmsReceiver")) {
+			receiver = new ComponentName(this, SmsReceiver.class);
+		}
+
+		PackageManager pm = this.getPackageManager();
+
+		pm.setComponentEnabledSetting(receiver,
+				PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
+				PackageManager.DONT_KILL_APP);
+	}
 }

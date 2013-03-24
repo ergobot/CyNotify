@@ -17,6 +17,49 @@ public class ContentManager {
 		context = newContext;
 	}
 
+	public ArrayList<SmsThread> ConvertToThreads(ArrayList<SmsMessage> smsMessages)
+	{
+		ArrayList<SmsThread> smsThreads = new ArrayList<SmsThread>();
+		
+		// Get a message
+		for(int i = 0; i < smsMessages.size(); i++)
+		{
+			int threadIndex = 0;
+			boolean messageAdded = false;
+			// Examine the threads
+			for(int j = 0; j < smsThreads.size(); j++)
+			{
+				
+				// If the message thread id matches 
+				if(smsMessages.get(i).MessageId().equals(smsThreads.get(j).MessageId()))
+				{
+					// add the message to the thread
+					smsThreads.get(j).Add(smsMessages.get(i));
+					
+					// message was added
+					messageAdded = true;
+				
+				}
+				threadIndex = j;				
+			}
+			// If the message was not added, 
+			if(!messageAdded)
+			{
+				//create new thread
+				SmsThread smsThread = new SmsThread();
+				// add the message
+				smsThread.Add(smsMessages.get(i));
+				// add the thread to the threads
+				smsThreads.add(smsThread);
+			}
+						
+			
+			
+		}
+
+		return smsThreads;
+	}
+	
 	public ArrayList<PhoneCall> GetMissedCalls(double history) {
 		ArrayList<PhoneCall> phoneCalls = new ArrayList<PhoneCall>();
 

@@ -12,7 +12,7 @@ import android.widget.Toast;
 
 public class StartupService extends IntentService {
 
-	public static final String PREFS_NAME = "ServiceDemo2Prefs";
+	public static final String PREFS_NAME = "CyNotifyPrefs";
 
 	Context context;
 	SharedPreferences settings;
